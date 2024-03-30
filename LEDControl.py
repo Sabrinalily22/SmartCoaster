@@ -1,144 +1,84 @@
 import time
 import RPi.GPIO as GPIO
 
-
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
-#assign GPIO position
-red1 = 12
-red2 = 16
-yellow1 = 20 
-yellow2 = 21
-green1 = 23
-green2 = 24
+# Dictionary to hold GPIO assignments
+led_pins = {
+    'red': [12, 16],
+    'yellow': [20, 21],
+    'green': [23, 24]
+}
 
-#set LEDS doutput and start low
-GPIO.setup(red1, GPIO.OUT)
-GPIO.output(red1, GPIO.LOW)
-GPIO.setup(red2, GPIO.OUT)
-GPIO.output(red2, GPIO.LOW)
+# Function to set up GPIO pins
+def setup_gpio(pins, state=GPIO.LOW):
+    for pin in pins:
+        GPIO.setup(pin, GPIO.OUT)
+        GPIO.output(pin, state)
 
-GPIO.setup(yellow1, GPIO.OUT)
-GPIO.output(yellow1, GPIO.LOW)
-GPIO.setup(yellow2, GPIO.OUT)
-GPIO.output(yellow2, GPIO.LOW)
+# Set up all LEDs
+for color, pins in led_pins.items():
+    setup_gpio(pins)
 
-GPIO.setup(green1, GPIO.OUT)
-GPIO.output(green1, GPIO.LOW)
-GPIO.setup(green2, GPIO.OUT)
-GPIO.output(green2, GPIO.LOW)
+# Function to set LEDs on or off
+def set_leds(color, state):
+    for pin in led_pins[color]:
+        GPIO.output(pin, state)
 
-#Flash on/off twice
-def all_flash():
-    GPIO.output(red1, GPIO.HIGH) 
-    GPIO.output(red2, GPIO.HIGH)
-    GPIO.output(yellow1, GPIO.HIGH) 
-    GPIO.output(yellow2, GPIO.HIGH)
-    GPIO.output(green1, GPIO.HIGH) 
-    GPIO.output(green2, GPIO.HIGH)
+# Generalized flash function
+def flash(color, duration, count=1):
+    for _ in range(count):
+        set_leds(color, GPIO.HIGH)
+        time.sleep(duration)
+        set_leds(color, GPIO.LOW)
+        time.sleep(duration)
+
+# Weight detection functions
+def weight_detected():
+    flash('yellow', 0.5, 2)
+
+def weight_removed():
+    flash('red', 0.5, 2)
+
+def log1():
+    flash('yellow', 0.1, 2)
+def log2():
     
-    time.sleep(0.5)
+    flash('yellow', 0.1, 2)
+    flash('yellow', 0.1, 1)
 
-    GPIO.output(red1, GPIO.LOW) 
-    GPIO.output(red2, GPIO.LOW)
-    GPIO.output(yellow1, GPIO.LOW) 
-    GPIO.output(yellow2, GPIO.LOW)
-    GPIO.output(green1, GPIO.LOW) 
-    GPIO.output(green2, GPIO.LOW)
+# Weight percentile function
+def weight_percentile(percent):
+    for color, pins in led_pins.items():
+        set_leds(color, GPIO.LOW)  # Reset all LEDs to LOW
+
+    thresholds = {
+        'red': 1/6,
+        'yellow': 3/6,
+        'green': 5/6,
+    }
+
+    for color, threshold in thresholds.items():
+        if percent > threshold:
+            set_leds(color, GPIO.HIGH)
     
-    time.sleep(0.5)
-
-    GPIO.output(red1, GPIO.HIGH) 
-    GPIO.output(red2, GPIO.HIGH)
-    GPIO.output(yellow1, GPIO.HIGH) 
-    GPIO.output(yellow2, GPIO.HIGH)
-    GPIO.output(green1, GPIO.HIGH) 
-    GPIO.output(green2, GPIO.HIGH)
-
-    time.sleep(0.5)
-
-    GPIO.output(red1, GPIO.LOW) 
-    GPIO.output(red2, GPIO.LOW)
-    GPIO.output(yellow1, GPIO.LOW) 
-    GPIO.output(yellow2, GPIO.LOW)
-    GPIO.output(green1, GPIO.LOW) 
-    GPIO.output(green2, GPIO.LOW)
-
-def weightDetected():
-   
-    GPIO.output(yellow1, GPIO.HIGH) 
-    GPIO.output(yellow2, GPIO.HIGH)
-    
-    
-    time.sleep(0.5)
-
-    
-    GPIO.output(yellow1, GPIO.LOW) 
-    GPIO.output(yellow2, GPIO.LOW)
-   
-    
-    time.sleep(0.5)
-
-    GPIO.output(yellow1, GPIO.HIGH) 
-    GPIO.output(yellow2, GPIO.HIGH)
-
-
-    time.sleep(0.5)
-
-    GPIO.output(yellow1, GPIO.LOW) 
-    GPIO.output(yellow2, GPIO.LOW)
-
-def log():
-    GPIO.output(yellow1, GPIO.HIGH) 
-    time.sleep(0.1)
-    GPIO.output(yellow1, GPIO.LOW)  
-    time.sleep(0.2)
-    GPIO.output(yellow1, GPIO.LOW)   
-    GPIO.output(yellow1, GPIO.HIGH) 
-    time.sleep(0.1)
-    GPIO.output(yellow1, GPIO.LOW) 
-    
-
-def weightPercentile(percent):
-    if percent > 0:
-        GPIO.output(red1, GPIO.LOW) 
-        GPIO.output(red2, GPIO.LOW)
-        GPIO.output(yellow1, GPIO.LOW) 
-        GPIO.output(yellow2, GPIO.LOW)
-        GPIO.output(green1, GPIO.LOW) 
-        GPIO.output(green2, GPIO.LOW)
-    elif percent > 1/6:
-        GPIO.output(red1, GPIO.HIGH) 
-    elif percent > 2/6: 
-        GPIO.output(red1, GPIO.HIGH) 
-        GPIO.output(red2, GPIO.HIGH)   
-    elif percent > 3/6:
-        GPIO.output(red1, GPIO.HIGH) 
-        GPIO.output(red2, GPIO.HIGH)
-        GPIO.output(yellow1, GPIO.HIGH) 
-    elif percent > 4/6:
-        GPIO.output(red1, GPIO.HIGH) 
-        GPIO.output(red2, GPIO.HIGH)
-        GPIO.output(yellow1, GPIO.HIGH) 
-        GPIO.output(yellow2, GPIO.HIGH)
-    elif percent > 5/6:
-        GPIO.output(red1, GPIO.HIGH) 
-        GPIO.output(red2, GPIO.HIGH)
-        GPIO.output(yellow1, GPIO.HIGH) 
-        GPIO.output(yellow2, GPIO.HIGH)
-        GPIO.output(green1, GPIO.HIGH) 
-    elif percent > 6/6:
-        GPIO.output(red1, GPIO.HIGH) 
-        GPIO.output(red2, GPIO.HIGH)
-        GPIO.output(yellow1, GPIO.HIGH) 
-        GPIO.output(yellow2, GPIO.HIGH)
-        GPIO.output(green1, GPIO.HIGH) 
-        GPIO.output(green2, GPIO.HIGH)
     time.sleep(5)
-    GPIO.output(red1, GPIO.LOW) 
-    GPIO.output(red2, GPIO.LOW)
-    GPIO.output(yellow1, GPIO.LOW) 
-    GPIO.output(yellow2, GPIO.LOW)
-    GPIO.output(green1, GPIO.LOW) 
-    GPIO.output(green2, GPIO.LOW)
+    for color, pins in led_pins.items():
+        set_leds(color, GPIO.LOW)  # Turn off all LEDs after displaying
+
+# Power on sequence
+def power_on_sequence():
+    for _ in range(2):  # Repeat the sequence twice
+        for color, pins in led_pins.items():
+            for pin in pins:
+                GPIO.output(pin, GPIO.HIGH)  # Turn on the pin
+                time.sleep(0.075)              # Wait for 0.1 seconds
+                GPIO.output(pin, GPIO.LOW)   # Turn off the pin
+                # No need to sleep here if you want to move to the next pin immediately
+        # No need to sleep here if you want to repeat the sequence immediately
+        
+
+
+
+
