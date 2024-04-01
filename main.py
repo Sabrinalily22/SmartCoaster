@@ -5,6 +5,7 @@
 import time, statistics
 import matplotlib.pyplot as plt
 import LEDControl
+
 from datetime import datetime, timedelta
 from MCP3008 import MCP3008
 from scipy.interpolate import interp1d
@@ -69,34 +70,60 @@ def convert(voltage):
 
     return spline_model(voltage)
 
+def sensor_read(voltage):
+    with open("etc/sensor1", "a") as f:
+        data = f"{voltage}\n"
+        f.write(data)
+
+
 def save_data(current_time, mass, voltage, consumption):
     with open("water_consumption_data", "a") as f:
-        data = f"{current_time.strftime('%Y-%m-%d')},{current_time.strftime('%H:%M:%S')},{mass},{voltage},{consumption}\n"
+        data = f"{current_time.strftime('%Y-%m-%d')}, {current_time.strftime('%H:%M:%S')}, {mass}, {voltage}, {consumption}\n"
         f.write(data)
 
 def write_consumption_data(current_time, average_stable_mass, average_stable_voltage, daily_water_consumption):
     global last_recorded_time, stable_voltages, last_mass
 
-    save_data(current_time, "%.1f" % average_stable_mass, "%.1f" % average_stable_voltage, "%1f" % daily_water_consumption)
-    LEDControl.log2()
-
+    average_stable_mass = round(average_stable_mass,0)
+    
     if (last_mass - average_stable_mass) > -10:
         daily_water_consumption += last_mass - average_stable_mass
-
+        daily_water_consumption = round(daily_water_consumption,0)
+    
+    save_data(current_time, "%.1f" % average_stable_mass, "%.1f" % average_stable_voltage, "%1f" % daily_water_consumption)
+    LEDControl.log2()    
+        
     last_recorded_time = current_time
     last_mass = average_stable_mass
 
 def set_stable_voltages(voltages):
     global stable_voltages
-
-    stable_voltages = convert(voltages[-100:])  # Last 100 readings
+    yeet = int(round(len(voltages)*0.2, 0))    
+    temp = voltages[-yeet:]  # Last 100 readings
+    #remove outliers from data set +/- (2%)
+    tempMean = voltageharmonic(temp)
+    for i in temp:
+        if abs(i-tempMean)/tempMean > 0.03:
+            temp.remove(i)
+    stable_voltages = temp   
+    
+   
 
 def set_stable_averages(stable_voltages):
     global average_stable_voltage, average_stable_mass, voltages
 
     average_stable_voltage = voltageharmonic(stable_voltages)
     average_stable_mass = convert(average_stable_voltage)                
-    voltages = []
+    #voltages = []
+    
+    return average_stable_voltage, average_stable_mass, voltages
+
+def set_stable_mode(stable_voltages):
+    global average_stable_voltage, average_stable_mass, voltages
+
+    average_stable_voltage = statistics.mode(stable_voltages)
+    average_stable_mass = convert(average_stable_voltage)                
+    #voltages = []
     
     return average_stable_voltage, average_stable_mass, voltages
 
@@ -148,38 +175,32 @@ def main():
     while True:
         current_time = datetime.now()
         voltage = read_voltage()
+        sensor_read(voltage)
         #matlab1(voltage)
         #thingspeak_post()
-        mass_is_on_coaster = voltage > 70
+        mass_is_on_coaster = voltage > 0
         consumption_goal_percentile = daily_water_consumption / daily_water_consumption_goal
         time_since_last_recorded = current_time - last_recorded_time
         
-        print(time_since_last_recorded)
+        #print(time_since_last_recorded)
+        time.sleep(frequency)
+        voltages.append(voltage)   
 
         if mass_is_on_coaster == False:
             voltages, stable_voltages = [], []
-            last_recorded_time = current_time
-            LEDControl.weight_percentile(consumption_goal_percentile)
+            last_recorded_time = current_time            
             time.sleep(10)
-            continue
-
-        time.sleep(frequency)
-        voltages.append(voltage)
+            continue              
 
         if len(voltages) == 5:
-            display_weight_on_LEDs(consumption_goal_percentile)
+            display_weight_on_LEDs(consumption_goal_percentile)     
 
-        #if 300 < len(voltages) <= 301:
-            #  print("hi")
-
-        if len(voltages) > 101:
+        if time_since_last_recorded > timedelta(minutes=0.3): 
             set_stable_voltages(voltages)
-
-        if time_since_last_recorded > timedelta(minutes=0.5):
-            average_stable_voltage, average_stable_mass, voltages = set_stable_averages(stable_voltages)
-
-        if time_since_last_recorded > timedelta(minutes=1):
-            print("1 minute")
+            average_stable_voltage, average_stable_mass, voltages = set_stable_averages(stable_voltages)            
+            print(average_stable_voltage)   
+            
+            last_recorded_time = current_time
             write_consumption_data(current_time, average_stable_mass, average_stable_voltage, daily_water_consumption)
 
         if current_time.hour == 0 and current_time.minute == 0:
