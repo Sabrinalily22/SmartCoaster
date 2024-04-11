@@ -6,9 +6,9 @@ GPIO.setwarnings(False)
 
 # Dictionary to hold GPIO assignments
 led_pins = {
-    'red': [12, 16],
-    'yellow': [20, 21],
-    'green': [23, 24]
+    'red': [23, 24],
+    'yellow': [12, 16],
+    'green': [20,21]
 }
 
 # Function to set up GPIO pins
@@ -86,8 +86,3 @@ def power_on_sequence():
                 GPIO.output(pin, GPIO.LOW)   # Turn off the pin
                 # No need to sleep here if you want to move to the next pin immediately
         # No need to sleep here if you want to repeat the sequence immediately
-        
-
-
-
-
