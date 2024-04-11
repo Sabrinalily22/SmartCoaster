@@ -58,15 +58,24 @@ def weight_percentile(percent):
         'yellow': 3/6,
         'green': 5/6,
     }
-
+    if percent >= 1:
+        power_on_sequence()
+        
     for color, threshold in thresholds.items():
         if percent > threshold:
             set_leds(color, GPIO.HIGH)
     
-    time.sleep(5)
+    time.sleep(2)
     for color, pins in led_pins.items():
         set_leds(color, GPIO.LOW)  # Turn off all LEDs after displaying
-
+    time.sleep(2)
+    for color, threshold in thresholds.items():
+        if percent > threshold:
+            set_leds(color, GPIO.HIGH)
+    
+    time.sleep(2)
+    for color, pins in led_pins.items():
+        set_leds(color, GPIO.LOW)  # Turn off all LEDs after displaying
 # Power on sequence
 def power_on_sequence():
     for _ in range(2):  # Repeat the sequence twice
