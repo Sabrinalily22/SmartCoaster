@@ -6,9 +6,9 @@ GPIO.setwarnings(False)
 
 # Dictionary to hold GPIO assignments
 led_pins = {
-    'red': [12, 16],
-    'yellow': [20, 21],
-    'green': [23, 24]
+    'red': [23, 24],
+    'yellow': [12, 16],
+    'green': [20,21]
 }
 
 # Function to set up GPIO pins
@@ -58,15 +58,24 @@ def weight_percentile(percent):
         'yellow': 3/6,
         'green': 5/6,
     }
-
+    if percent >= 1:
+        power_on_sequence()
+        
     for color, threshold in thresholds.items():
         if percent > threshold:
             set_leds(color, GPIO.HIGH)
     
-    time.sleep(5)
+    time.sleep(2)
     for color, pins in led_pins.items():
         set_leds(color, GPIO.LOW)  # Turn off all LEDs after displaying
-
+    time.sleep(2)
+    for color, threshold in thresholds.items():
+        if percent > threshold:
+            set_leds(color, GPIO.HIGH)
+    
+    time.sleep(2)
+    for color, pins in led_pins.items():
+        set_leds(color, GPIO.LOW)  # Turn off all LEDs after displaying
 # Power on sequence
 def power_on_sequence():
     for _ in range(2):  # Repeat the sequence twice
@@ -77,8 +86,3 @@ def power_on_sequence():
                 GPIO.output(pin, GPIO.LOW)   # Turn off the pin
                 # No need to sleep here if you want to move to the next pin immediately
         # No need to sleep here if you want to repeat the sequence immediately
-        
-
-
-
-
