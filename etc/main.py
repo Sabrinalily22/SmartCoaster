@@ -82,8 +82,6 @@ def sensor_read(voltage, file):
         data = f"{voltage}\n"
         f.write(data)
 
-
-
 def write_consumption_data(current_time, average_stable_mass, average_stable_voltage):
     global last_recorded_time, stable_voltages, last_mass, daily_water_consumption    
     average_stable_mass = round(average_stable_mass)
